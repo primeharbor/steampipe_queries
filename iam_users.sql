@@ -1,0 +1,1 @@
+SELECT name, account_id, create_date, attached_policy_arns, login_profile, mfa_enabled FROM aws_iam_user;

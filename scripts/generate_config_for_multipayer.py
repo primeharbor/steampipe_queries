@@ -51,7 +51,7 @@ connection "aws_{sp_account_name}" {{
 
 
     steampipe_spc_file = f"""
-# Create an aggregator of _all_ the accounts.
+# Create an aggregator of _all_ the accounts as the first entry in the search path.
 connection "aws" {{
   plugin = "aws"
   type = "aggregator"

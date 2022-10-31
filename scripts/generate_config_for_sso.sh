@@ -42,6 +42,7 @@ connection "aws" {
   connections = ["aws_*"]
 }
 
+# create an aggregator of just the payer
 connection "aws_payer" {
   plugin = "aws"
   type        = "aggregator"
@@ -64,17 +65,17 @@ while read line ; do
 # Append an entry to the AWS Creds file
 cat <<EOF>>$AWS_CONFIG_FILE
 
-[profile ${ACCOUNT_NAME}]
+[profile sp_${ACCOUNT_NAME}]
 role_arn = arn:aws:iam::${ACCOUNT_ID}:role/${AUDITROLE}
 source_profile = ${SSO_PROFILE}
-role_session_name = steampipe
+role_session_name = steampipe-sso
 EOF
 
 # And append an entry to the Steampipe config file
 cat <<EOF>>$SP_CONFIG_FILE
 connection "aws_${SP_NAME}" {
   plugin  = "aws"
-  profile = "${ACCOUNT_NAME}"
+  profile = "sp_${ACCOUNT_NAME}"
   regions = ${ALL_REGIONS}
     options "connection" {
         cache     = true # true, false

@@ -18,6 +18,7 @@ def main(args):
 
     http = urllib3.PoolManager()
 
+    # Get my Steampipe Org Identifier based on my org name
     r = http.request('GET', f"https://{args.spc_endpoint}/api/v0/org/{args.org_name}",
         headers={'Authorization': f"Bearer {STEAMPIPE_CLOUD_TOKEN}"}
     )
@@ -25,25 +26,26 @@ def main(args):
         results = json.loads(r.data.decode('utf-8'))
         sp_org_id = results['id']
     else:
-        # We need to update???
-        print(r.data.decode('utf-8'))
-        raise NotImplementedError
+        print(f"FATAL ERROR ({r.status}): unable to get the steampipe org id for {args.org_name}. Does it exist?: {r.data.decode('utf-8')}")
+        exit(1)
 
-    regions = ["*"]
-    payer_account_id = get_my_id()
+    regions = args.regions
+    payer_account_id = get_my_acount_id()
 
     accounts = list_accounts()
     for a in accounts:
         sp_account_name = a['Name'].replace('-', '_')
         external_id = f"{sp_org_id}:{get_random_str()}"
-        role_arn = f"arn:aws:iam::{a['Id']}:role/{args.org_role}"
+        sp_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.rolename}"
+        org_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.org_role}"
 
-        print(f"Processing connection {sp_account_name} for {a['Name']}({a['Id']}) in org_id {sp_org_id}")
+
+        print(f"Processing connection {sp_account_name} for {a['Name']}({a['Id']}) in org_id {sp_org_id} for {regions}")
         # continue
 
         # 1. Assume the Role
         if a['Id'] != payer_account_id:
-            account_creds = get_creds(role_arn, args.role_session_name)
+            account_creds = get_creds(org_role_arn, args.role_session_name)
             iam_client = get_client(account_creds, 'iam')
         else:
             iam_client = boto3.client('iam')
@@ -54,7 +56,7 @@ def main(args):
                 "Version": "2012-10-17",
                 "Statement": [{
                         "Effect": "Allow",
-                        "Principal": {"AWS": [f"arn:aws:iam::{a['Id']}:root"] },
+                        "Principal": {"AWS": [f"arn:aws:iam::{args.spc_account_id}:root"] },
                         "Action": ["sts:AssumeRole"],
                         "Condition": {"StringEquals": {"sts:ExternalId": external_id} }
             } ] }
@@ -74,8 +76,6 @@ def main(args):
                 raise
 
         response = iam_client.attach_role_policy(RoleName=args.rolename, PolicyArn='arn:aws:iam::aws:policy/ReadOnlyAccess')
-        # Fixme - is this idempotent?
-
 
         # 3. Create Connection in SP Cloud
         create_payload = {
@@ -83,7 +83,7 @@ def main(args):
             "plugin": "aws",
             "config": {
                 "regions": regions,
-                "role_arn": role_arn,
+                "role_arn": sp_role_arn,
                 "external_id": external_id
             }
         }
@@ -92,9 +92,12 @@ def main(args):
             headers={'Authorization': f"Bearer {STEAMPIPE_CLOUD_TOKEN}"}
         )
         if r.status == 409:
-            print(f"A connection called {sp_account_name} already exists in {args.org_name}({sp_org_id})")
+            print(f"A connection called {sp_account_name} already exists in {args.org_name}({sp_org_id}). Updating....")
+            r = http.request('PATCH', f"https://{args.spc_endpoint}/api/v0/org/{args.org_name}/conn/{sp_account_name}",
+                body=json.dumps(create_payload),
+                headers={'Authorization': f"Bearer {STEAMPIPE_CLOUD_TOKEN}"}
+            )
         elif r.status != 201:
-            # We need to update???
             print(f"STatus: {r.status}")
             print(r.data.decode('utf-8'))
             raise NotImplementedError
@@ -105,7 +108,7 @@ def main(args):
             headers={'Authorization': f"Bearer {STEAMPIPE_CLOUD_TOKEN}"}
         )
         if r.status == 409:
-            print(f"connection {sp_account_name} is already a member of workspace {args.org_name}/{args.workspace}")
+            print(f"Connection {sp_account_name} is already a member of workspace {args.org_name}/{args.workspace}")
         elif r.status != 201:
             # We need to update???
             print(f"ERROR: unable to add {sp_account_name} to workspace {args.workspace} in {args.org_name}: Status: {r.status} - {r.data.decode('utf-8')}")
@@ -113,7 +116,7 @@ def main(args):
         print("")
 
 
-def get_my_id():
+def get_my_acount_id():
     client = boto3.client('sts')
     response = client.get_caller_identity()
     return(response['Account'])
@@ -184,12 +187,12 @@ def list_accounts():
 def do_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", help="print debugging info", action='store_true')
-    parser.add_argument("--rolename", help="Role Name to Assume", default="steampipecloud")
+    parser.add_argument("--rolename", help="Role Name to Assume", default="steampipe-cloud")
     parser.add_argument("--role-session-name", help="Role Session Name to use during setup", default="steampipe")
     parser.add_argument("--org-role", help="Role to assume from the management account", default="OrganizationAccountAccessRole")
-    parser.add_argument("--spc-endpoint", help="Steampipe Cloud Endpoint", default="latestpipe.turbot.io")
-    parser.add_argument("--spc-account-id", help="Steampipe Cloud Account ID to trust", default="525041748188")
-
+    parser.add_argument("--spc-endpoint", help="Steampipe Cloud Endpoint", default="cloud.steampipe.io")
+    parser.add_argument("--spc-account-id", help="Steampipe Cloud Account ID to trust", default="316881668097")
+    parser.add_argument("--regions", nargs='+', help="REGION1, REGION2 Configure Steampipe Cloud to only use these regions", default=["*"])
 
     parser.add_argument("--org-name", help="Org Name to add connections to", required=True)
     parser.add_argument("--workspace", help="Workspace to add connections to", required=True)

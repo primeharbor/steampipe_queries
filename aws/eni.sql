@@ -1,6 +1,6 @@
 SELECT
 	eni.network_interface_id,
-	eni.private_ip,
+	eni.private_ip_address,
 	eni.vpc_id AS vpc_id,
 	eni.region,
 	eni.status,
@@ -16,6 +16,6 @@ SELECT
 FROM
 	aws_ec2_network_interface AS eni,
 	aws_vpc AS vpc,
-	aws_fooli_payer.aws_organizations_account AS org
+	aws_payer.aws_organizations_account AS org
 WHERE vpc.vpc_id = eni.vpc_id
   AND org.id = eni.account_id;

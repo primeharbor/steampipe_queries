@@ -34,7 +34,7 @@ def main(args):
 
     accounts = list_accounts()
     for a in accounts:
-        sp_account_name = a['Name'].replace('-', '_')
+        sp_account_name = a['Name'].replace('-', '_').lower()
         external_id = f"{sp_org_id}:{get_random_str()}"
         sp_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.rolename}"
         org_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.org_role}"

@@ -1,3 +1,3 @@
 # steampipe_queries
 
-Random Queries for Steampipe
+Random Scripts & Queries for Steampipe

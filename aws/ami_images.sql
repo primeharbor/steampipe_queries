@@ -1,11 +1,12 @@
-select
+SELECT
   name,
   image_id,
   state,
-  image_location,
-  _ctx ->> 'connection_name' as account,
+  region,
+  _ctx ->> 'connection_name' AS account,
   creation_date,
   public
-from
+FROM
   aws_ec2_ami
-order by creation_date;
+ORDER BY
+  creation_date DESC;

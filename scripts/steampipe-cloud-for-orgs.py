@@ -34,7 +34,7 @@ def main(args):
 
     accounts = list_accounts()
     for a in accounts:
-        sp_account_name = a['Name'].replace('-', '_').lower()
+        sp_account_name = a['Name'].replace('-', '_').replace('.', '_').lower()
         external_id = f"{sp_org_id}:{get_random_str()}"
         sp_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.rolename}"
         org_role_arn = f"arn:aws:iam::{a['Id']}:role/{args.org_role}"
@@ -46,6 +46,8 @@ def main(args):
         # 1. Assume the Role
         if a['Id'] != payer_account_id:
             account_creds = get_creds(org_role_arn, args.role_session_name)
+            if account_creds is None:
+                continue
             iam_client = get_client(account_creds, 'iam')
         else:
             iam_client = boto3.client('iam')
@@ -149,7 +151,7 @@ def get_creds(role_arn, session_name=None):
         return(session['Credentials'])
     except ClientError as e:
         print(f"Failed to assume role {role_arn}: {e}")
-        exit(1)
+        return(None)
 
 
 def get_client(creds, type, region='us-east-1'):

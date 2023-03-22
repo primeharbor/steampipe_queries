@@ -34,7 +34,7 @@ if [ -z $STEAMPIPE_INSTALL_DIR ] ; then
 fi
 
 if [ ! -d $STEAMPIPE_INSTALL_DIR ] ; then
-  echo "$STEAMPIPE_INSTALL_DIR doesn't exist. Creating it"
+  echo "STEAMPIPE_INSTALL_DIR: $STEAMPIPE_INSTALL_DIR doesn't exist. Creating it"
   mkdir -p ${STEAMPIPE_INSTALL_DIR}/config/
 fi
 

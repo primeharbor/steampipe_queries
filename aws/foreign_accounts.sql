@@ -26,7 +26,6 @@ roles AS (
     jsonb_array_elements_text(statement -> 'Principal' -> 'AWS') AS principals
 )
 
-
 SELECT DISTINCT
   aws_ec2_ami_shared.owner_id AS foreign_account_id
 FROM

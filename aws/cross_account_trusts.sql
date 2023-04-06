@@ -2,7 +2,7 @@ WITH org_accounts AS (
   SELECT
     id
   FROM
-    payerFIXME.aws_organizations_account
+    aws_payer.aws_organizations_account
 ),
 roles AS (
   SELECT

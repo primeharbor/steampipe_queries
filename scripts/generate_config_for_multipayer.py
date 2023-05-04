@@ -18,21 +18,27 @@ region=us-east-1
 
     steampipe_connections = ""
 
+    if args.ec2:
+        cred_source = "credential_source = Ec2InstanceMetadata"
+    else:
+        cred_source = f"source_profile = {args.profile}"
+
     for payer_id in args.payers:
 
         accounts = list_accounts(payer_id, args)
         for a in accounts:
 
-            sp_account_name = a['Name'].replace('-', '_')
+            sp_account_name = a['Name'].replace('-', '_').replace(' ', '_').lower()
+            aws_account_name = a['Name'].replace(' ', '_').lower()
 
             if a['Id'] in args.payers:
                 payer_names.append(f"aws_{sp_account_name}")
 
             aws_config_file += f"""
 # {a['Name']}
-[profile {a['Name']}]
+[profile {aws_account_name}]
 role_arn = arn:aws:iam::{a['Id']}:role/{args.rolename}
-credential_source = Ec2InstanceMetadata
+{cred_source}
 role_session_name = {args.role_session_name}
             """
 
@@ -40,7 +46,7 @@ role_session_name = {args.role_session_name}
             steampipe_connections += f"""
 connection "aws_{sp_account_name}" {{
   plugin  = "aws"
-  profile = "{a['Name']}"
+  profile = "{aws_account_name}"
   regions = ["*"]
     options "connection" {{
         cache     = true # true, false
@@ -108,7 +114,7 @@ def list_accounts(payer_id, args):
             print("AWS Organiations is not in use or this is not a payer account")
             return(None)
         else:
-            raise ClientError(e)
+            raise
 
 def do_args():
     parser = argparse.ArgumentParser()
@@ -118,6 +124,11 @@ def do_args():
     parser.add_argument("--rolename", help="Role Name to Assume", required=True)
     parser.add_argument("--payers", nargs='+', help="List of Payers to configure", required=True)
     parser.add_argument("--role-session-name", help="Role Session Name to use", default="steampipe")
+    parser.add_argument("--ec2", help="Use Ec2InstanceMetadata", action='store_true')
+    parser.add_argument("--profile", help="source profile to use for assume role")
+
+
+
     args = parser.parse_args()
     return(args)
 

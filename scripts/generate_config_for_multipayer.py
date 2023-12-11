@@ -48,10 +48,6 @@ connection "aws_{sp_account_name}" {{
   plugin  = "aws"
   profile = "{aws_account_name}"
   regions = ["*"]
-    options "connection" {{
-        cache     = true # true, false
-        cache_ttl = 3600  # expiration (TTL) in seconds
-    }}
 }}
 """
 

@@ -75,11 +75,16 @@ connection "aws" {
 
 EOF
 
+# How to loop over jq array came from https://www.starkandwayne.com/blog/bash-for-loop-over-json-array-using-jq/index.html
+for a in `aws sso list-accounts --access-token "$token" --region "${AWS_DEFAULT_REGION}" | jq -r '.accountList[] | @base64'` ; do
+  _jq() {
+    echo ${a} | base64 --decode | jq -r ${1}
+  }
 
-for a in `aws sso list-accounts --access-token "$token" --region "${AWS_DEFAULT_REGION}" --output text | awk '{print $2":"$3}'` ; do
+  acctnum=`echo $(_jq '.accountId')`
+  acctname=`echo $(_jq '.accountName') | sed s/\ /_/g`
 
-  acctnum=`echo $a | awk -F: '{print $1}'`
-  acctname=`echo $a | awk -F: '{print $2}'`
+  echo Adding $acctname
 
   # Steampipe doesn't like dashes, so we need to swap for underscores
   SP_NAME=`echo $acctname | sed s/-/_/g`

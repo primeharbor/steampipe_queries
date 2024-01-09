@@ -94,7 +94,7 @@ for a in `aws sso list-accounts --access-token "$token" --region "${AWS_DEFAULT_
     echo "# $SSO_ROLE was not in list of SSO roles available to this user. Skipping account $acctname ($acctnum) \n"
   else
 
-cat << EOF>> AWS_CONFIG
+cat <<EOF>> $AWS_CONFIG
 
 [profile ${acctname}]
 sso_start_url = ${START_URL}

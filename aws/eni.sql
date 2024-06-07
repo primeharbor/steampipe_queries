@@ -12,10 +12,10 @@ SELECT
 		ELSE eni.description
 	END AS attached_resource,
 	vpc.tags ->> 'Name' AS vpc_name,
-	org.name AS account_name
+	eni._ctx ->> 'connection_name' AS account_name
 FROM
 	aws_ec2_network_interface AS eni,
-	aws_vpc AS vpc,
-	aws_payer.aws_organizations_account AS org
+	aws_vpc AS vpc
 WHERE vpc.vpc_id = eni.vpc_id
-  AND org.id = eni.account_id;
+AND eni.attached_instance_id is not Null
+AND eni.association_public_ip is not Null

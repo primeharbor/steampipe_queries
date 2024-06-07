@@ -110,6 +110,7 @@ connection "aws_${SP_NAME}" {
   plugin  = "aws"
   profile = "${acctname}"
   regions = ["*"]
+  ignore_error_codes = ["AccessDenied", "AccessDeniedException", "NotAuthorized", "UnauthorizedOperation", "UnrecognizedClientException", "AuthorizationError"]
 }
 
 EOF

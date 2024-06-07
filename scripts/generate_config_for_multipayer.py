@@ -28,6 +28,9 @@ region=us-east-1
         accounts = list_accounts(payer_id, args)
         for a in accounts:
 
+            if a['Status'] != "ACTIVE":
+                continue
+
             sp_account_name = a['Name'].replace('-', '_').replace(' ', '_').lower()
             aws_account_name = a['Name'].replace(' ', '_').lower()
 
